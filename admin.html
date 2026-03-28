@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<base target="_top">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>実践の本棚｜管理者</title>
+<style>
+:root {
+  --p: #1565C0; --pd: #0D47A1; --g: #2E7D32; --o: #E65100; --r: #C62828;
+  --bg: #EEF2F7; --white: #fff; --text: #1A237E; --gray: #546E7A;
+  --border: #CFD8DC; --hover: #E3F2FD;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: var(--bg); color: #263238; font-size: 14px; }
+
+.nav { background: var(--pd); color: #fff; padding: 0 24px; display: flex; align-items: center; gap: 24px; height: 54px; }
+.nav .logo { font-size: 18px; font-weight: bold; }
+.nav .admin-name { font-size: 13px; opacity: .8; margin-left: auto; }
+.nav .sync-badge { font-size: 11px; background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3); padding: 3px 10px; border-radius: 12px; color: rgba(255,255,255,.8); }
+.nav .logout-btn { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3); color: #fff; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 13px; }
+.nav .logout-btn:hover { background: rgba(255,255,255,.25); }
+
+.tab-bar { background: var(--p); display: flex; padding: 0 24px; gap: 4px; }
+.tab-btn { padding: 12px 20px; color: rgba(255,255,255,.7); cursor: pointer; border: none; background: none; font-family: inherit; font-size: 14px; font-weight: bold; border-bottom: 3px solid transparent; transition: all .15s; }
+.tab-btn.active, .tab-btn:hover { color: #fff; border-bottom-color: #fff; }
+
+.content { max-width: 1100px; margin: 24px auto; padding: 0 20px; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+.card { background: var(--white); border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,.08); overflow: hidden; margin-bottom: 20px; }
+.card-header { padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+.card-header h3 { font-size: 15px; color: var(--text); }
+.card-body { padding: 0; }
+
+.btn { display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px; border: none; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: bold; transition: all .12s; }
+.btn:active { opacity: .8; transform: translateY(1px); }
+.btn-p   { background: var(--p);  color: #fff; }
+.btn-g   { background: var(--g);  color: #fff; }
+.btn-o   { background: var(--o);  color: #fff; }
+.btn-r   { background: var(--r);  color: #fff; }
+.btn-s   { background: #78909C;   color: #fff; }
+.btn-sm  { padding: 4px 10px; font-size: 12px; }
+.btn-outline { background: none; border: 1px solid var(--border); color: var(--gray); }
+.btn-outline:hover { border-color: var(--p); color: var(--p); }
+
+.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tbl th { background: #ECEFF1; color: var(--text); padding: 10px 12px; text-align: left; font-size: 12px; white-space: nowrap; border-bottom: 2px solid var(--border); }
+.tbl td { padding: 9px 12px; border-bottom: 1px solid #F5F5F5; vertical-align: middle; }
+.tbl tr:hover td { background: var(--hover); }
+.tbl .ops { display: flex; gap: 5px; flex-wrap: wrap; }
+
+.pin-cell { display: flex; align-items: center; gap: 6px; }
+.pin-text { font-family: monospace; font-size: 13px; letter-spacing: 1px; color: #333; }
+.eye-btn { background: none; border: none; cursor: pointer; font-size: 15px; color: var(--gray); padding: 2px; line-height: 1; }
+.no-pin { color: #aaa; font-style: italic; }
+
+.badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; }
+.badge-admin { background: #E8EAF6; color: var(--pd); }
+.badge-reg   { background: #E8F5E9; color: var(--g); }
+.badge-noreg { background: #FFF3E0; color: var(--o); }
+
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.stat-card { background: var(--white); border-radius: 10px; padding: 16px 20px; box-shadow: 0 2px 8px rgba(0,0,0,.07); border-left: 4px solid var(--p); }
+.stat-card .label { font-size: 12px; color: var(--gray); margin-bottom: 4px; }
+.stat-card .value { font-size: 26px; font-weight: bold; color: var(--text); }
+.stat-card .sub   { font-size: 12px; color: var(--gray); margin-top: 2px; }
+
+.form-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.form-group { flex: 1; min-width: 140px; }
+.form-group label { display: block; font-size: 12px; font-weight: bold; color: var(--gray); margin-bottom: 4px; }
+.form-group input, .form-group select { width: 100%; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 13px; }
+.form-group input:focus, .form-group select:focus { outline: none; border-color: var(--p); }
+.form-group.wide { flex: 2; }
+.check-label { display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; margin-top: 18px; }
+
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 1000; justify-content: center; align-items: flex-start; padding: 30px 20px; overflow-y: auto; }
+.overlay.active { display: flex; }
+.modal { background: var(--white); border-radius: 12px; width: 100%; max-width: 580px; margin: auto; box-shadow: 0 20px 50px rgba(0,0,0,.3); overflow: hidden; }
+.modal.wide { max-width: 720px; }
+.modal-head { padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; background: var(--pd); color: #fff; }
+.modal-head h3 { font-size: 16px; }
+.close-btn { background: none; border: none; color: #fff; font-size: 22px; cursor: pointer; line-height: 1; padding: 0 4px; }
+.modal-body { padding: 22px 20px; }
+.modal-foot { padding: 14px 20px; background: #F5F5F5; display: flex; gap: 10px; justify-content: flex-end; border-top: 1px solid var(--border); }
+
+.rec-section { margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid #ECEFF1; }
+.rec-section:last-child { border-bottom: none; }
+.rec-label { font-size: 11px; font-weight: bold; color: #26A69A; letter-spacing: .5px; margin-bottom: 5px; }
+.rec-content { font-size: 14px; line-height: 1.8; white-space: pre-wrap; color: #263238; }
+.media-thumb { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.media-thumb img { width: 120px; height: 90px; object-fit: cover; border-radius: 6px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,.15); }
+
+.rec-form textarea { width: 100%; padding: 9px 11px; border: 1.5px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 13px; resize: vertical; min-height: 90px; line-height: 1.6; }
+.rec-form textarea:focus, .rec-form input[type="text"]:focus, .rec-form input[type="date"]:focus { outline: none; border-color: var(--p); }
+.rec-form input[type="text"], .rec-form input[type="date"] { width: 100%; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 13px; }
+.sec-div { background: #26A69A; color: #fff; padding: 6px 12px; border-radius: 5px; font-size: 12px; font-weight: bold; margin: 14px 0 8px; }
+
+.shelf-select { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+.shelf-select select { padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 14px; min-width: 200px; }
+.shelf-stats { display: flex; gap: 16px; background: #E3F2FD; padding: 10px 16px; border-radius: 8px; font-size: 13px; font-weight: bold; color: var(--pd); margin-bottom: 14px; flex-wrap: wrap; }
+
+#loginScreen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #0D47A1, #1565C0); }
+.login-box { background: #fff; border-radius: 16px; padding: 36px 32px; width: 320px; box-shadow: 0 20px 50px rgba(0,0,0,.3); text-align: center; }
+.login-box .logo { font-size: 22px; font-weight: bold; color: var(--pd); margin-bottom: 4px; }
+.login-box .sub  { font-size: 13px; color: var(--gray); margin-bottom: 24px; }
+.login-box select { width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 15px; margin-bottom: 14px; }
+.pin-disp { background: #EEF2F7; border: 1.5px solid var(--border); border-radius: 8px; font-family: monospace; font-size: 28px; letter-spacing: 8px; padding: 10px; margin-bottom: 14px; height: 52px; line-height: 52px; color: #333; }
+.numpad { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 14px; }
+.nk { background: #E3F2FD; border: 1.5px solid #90CAF9; border-radius: 50%; height: 56px; font-size: 22px; font-weight: bold; color: #0D47A1; cursor: pointer; box-shadow: 0 3px 0 #64B5F6; font-family: inherit; transition: .1s; }
+.nk:active { transform: translateY(3px); box-shadow: none; }
+.nk.nc { background: #FFEBEE; border-color: #EF9A9A; color: var(--r); box-shadow: 0 3px 0 #E57373; }
+.nk.no { background: #E8F5E9; border-color: #A5D6A7; color: var(--g); box-shadow: 0 3px 0 #81C784; }
+
+.confirm-msg { font-size: 15px; color: #263238; line-height: 1.7; margin-bottom: 4px; }
+.confirm-sub { font-size: 13px; color: var(--r); font-weight: bold; }
+.empty { text-align: center; padding: 40px; color: #aaa; }
+
+/* 自動更新トースト */
+#autoRefreshToast { position: fixed; bottom: 16px; right: 16px; background: rgba(38,166,154,.92); color: white; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: bold; z-index: 9999; opacity: 0; transition: opacity .3s; pointer-events: none; }
+#autoRefreshToast.show { opacity: 1; }
+
+@media (max-width: 600px) {
+  .content { padding: 0 12px; }
+  .tbl td, .tbl th { padding: 7px 8px; }
+  .form-row { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<div id="autoRefreshToast">🔄 自動更新しました</div>
+
+<!-- ===== LOGIN ===== -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="logo">📚 実践の本棚</div>
+    <div class="sub">管理者ログイン</div>
+    <select id="adNameSel"><option value="">名前を選ぶ ▼</option></select>
+    <div id="adPinDisp" class="pin-disp">&nbsp;</div>
+    <div class="numpad">
+      <button class="nk" onclick="ap(1)">1</button><button class="nk" onclick="ap(2)">2</button><button class="nk" onclick="ap(3)">3</button>
+      <button class="nk" onclick="ap(4)">4</button><button class="nk" onclick="ap(5)">5</button><button class="nk" onclick="ap(6)">6</button>
+      <button class="nk" onclick="ap(7)">7</button><button class="nk" onclick="ap(8)">8</button><button class="nk" onclick="ap(9)">9</button>
+      <button class="nk nc" onclick="cp()">C</button><button class="nk" onclick="ap(0)">0</button><button class="nk no" onclick="sp()">OK</button>
+    </div>
+    <div id="adErr" style="color:var(--r);font-size:13px;min-height:18px;"></div>
+    <!-- ナビゲーション -->
+    <div style="margin-top:20px;border-top:1px solid #E3E8F0;padding-top:18px;">
+      <p style="font-size:12px;color:#aaa;margin-bottom:10px;">他のページへ移動</p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+        <button onclick="goToPage('')"     style="padding:8px 16px;background:#5D4037;color:#fff;border:none;border-radius:16px;font-size:12px;font-weight:bold;cursor:pointer;">📚 実践の本棚</button>
+        <button onclick="goToPage('library')" style="padding:8px 16px;background:#26A69A;color:#fff;border:none;border-radius:16px;font-size:12px;font-weight:bold;cursor:pointer;">🏛️ 公共図書館</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MAIN ===== -->
+<div id="mainScreen" style="display:none;">
+  <div class="nav">
+    <span class="logo">📚 実践の本棚｜管理者</span>
+    <span id="navName" class="admin-name"></span>
+    <span id="syncBadge" class="sync-badge">🔄 自動更新 ON</span>
+    <button class="logout-btn" onclick="logout()">ログアウト</button>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('teachers', this)">👥 先生管理</button>
+    <button class="tab-btn" onclick="switchTab('shelf', this)">📚 書庫管理</button>
+    <button class="tab-btn" onclick="switchTab('stats', this)">📊 統計</button>
+  </div>
+
+  <div class="content">
+
+    <!-- TAB: 先生管理 -->
+    <div id="tab-teachers" class="tab-panel active">
+      <div class="card">
+        <div class="card-header">
+          <h3>先生一覧</h3>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-g" onclick="openAddTeacher()">＋ 先生を追加</button>
+            <button class="btn btn-r" onclick="confirmBulkDeleteTeachers()">🗑️ 全員削除</button>
+          </div>
+        </div>
+        <div class="card-body" style="overflow-x:auto;">
+          <table class="tbl">
+            <thead>
+              <tr><th>氏名</th><th>所属学年</th><th>所属学級</th><th>専科</th><th>登録日</th><th>パスワード</th><th>権限</th><th>操作</th></tr>
+            </thead>
+            <tbody id="teacherTbody"><tr><td colspan="8" class="empty">読み込み中...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: 書庫管理 -->
+    <div id="tab-shelf" class="tab-panel">
+      <div class="card">
+        <div class="card-header"><h3>先生の書庫を管理する</h3></div>
+        <div class="card-body" style="padding:16px 20px;">
+          <div class="shelf-select">
+            <select id="shelfTeacherSel" onchange="loadShelf()"><option value="">先生を選んでください ▼</option></select>
+            <button class="btn btn-r btn-sm" id="bulkDelShelfBtn" style="display:none;" onclick="confirmBulkDeleteShelf()">🗑️ 一括削除</button>
+          </div>
+          <div id="shelfStats" class="shelf-stats" style="display:none;"></div>
+          <div id="shelfBody"><p class="empty">先生を選ぶと書庫が表示されます</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: 統計 -->
+    <div id="tab-stats" class="tab-panel">
+      <div id="statsGrid" class="stats-grid"></div>
+      <div class="card">
+        <div class="card-header"><h3>先生別 記録・閲覧サマリー</h3></div>
+        <div class="card-body" style="overflow-x:auto;">
+          <table class="tbl">
+            <thead><tr><th>氏名</th><th>所属</th><th>記録数</th><th>総閲覧数</th></tr></thead>
+            <tbody id="statsTbody"><tr><td colspan="4" class="empty">読み込み中...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL: 先生追加/編集 -->
+<div id="teacherModal" class="overlay">
+  <div class="modal">
+    <div class="modal-head"><h3 id="teacherModalTitle">先生を追加</h3><button class="close-btn" onclick="closeModal('teacherModal')">×</button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-group wide"><label>氏名 *</label><input type="text" id="tfName" placeholder="山田 花子"></div></div>
+      <div class="form-row">
+        <div class="form-group"><label>所属学年</label><input type="text" id="tfGrade" placeholder="6年"></div>
+        <div class="form-group"><label>所属学級</label><input type="text" id="tfClass" placeholder="1組"></div>
+        <div class="form-group"><label>専科名</label><input type="text" id="tfSpecialty" placeholder="体育 など"></div>
+      </div>
+      <div class="form-row"><label class="check-label"><input type="checkbox" id="tfAdmin"> 管理者権限を付与する</label></div>
+      <div id="tfErr" style="color:var(--r);font-size:13px;margin-top:8px;"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('teacherModal')">キャンセル</button>
+      <button id="teacherSaveBtn" class="btn btn-g" onclick="saveTeacher()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: パスワード変更 -->
+<div id="pwModal" class="overlay">
+  <div class="modal">
+    <div class="modal-head"><h3 id="pwModalTitle">パスワードを変更</h3><button class="close-btn" onclick="closeModal('pwModal')">×</button></div>
+    <div class="modal-body">
+      <p id="pwTargetName" style="font-weight:bold;font-size:15px;margin-bottom:14px;color:var(--pd);"></p>
+      <div class="form-group"><label>新しいパスワード（数字）</label><input type="text" id="pwInput" placeholder="例：1234"></div>
+      <div id="pwErr" style="color:var(--r);font-size:13px;margin-top:8px;"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('pwModal')">キャンセル</button>
+      <button class="btn btn-p" onclick="savePw()">変更する</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: 本を読む -->
+<div id="bookViewModal" class="overlay">
+  <div class="modal wide">
+    <div class="modal-head"><h3 id="bvTitle" style="font-size:15px;"></h3><button class="close-btn" onclick="closeModal('bookViewModal')">×</button></div>
+    <div class="modal-body" id="bvBody"></div>
+    <div class="modal-foot" id="bvFoot"></div>
+  </div>
+</div>
+
+<!-- MODAL: 本を編集 -->
+<div id="bookEditModal" class="overlay">
+  <div class="modal wide">
+    <div class="modal-head"><h3>記録を編集</h3><button class="close-btn" onclick="closeModal('bookEditModal')">×</button></div>
+    <div class="modal-body rec-form">
+      <div class="form-group" style="margin-bottom:12px;"><label>タイトル *</label><input type="text" id="beTitle"></div>
+      <div style="display:flex;gap:10px;margin-bottom:12px;">
+        <div class="form-group"><label>いつ</label><input type="date" id="beWhen"></div>
+        <div class="form-group" style="flex:2;"><label>どこで</label><input type="text" id="beWhere"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;"><label>誰が</label><input type="text" id="beWho"></div>
+      <div class="sec-div">📝 具体的な言動</div>
+      <textarea id="beBehaviors" rows="4" style="margin-bottom:4px;"></textarea>
+      <div id="beMediaPreview" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
+      <div class="sec-div">💡 教師の仕掛け</div>
+      <textarea id="beApproach" rows="3" style="margin-bottom:4px;"></textarea>
+      <div class="sec-div">✅ 成果と課題</div>
+      <textarea id="beResults" rows="4"></textarea>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('bookEditModal')">キャンセル</button>
+      <button class="btn btn-o" onclick="saveBookEdit()">💾 保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: 確認 -->
+<div id="confirmModal" class="overlay">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-head" style="background:var(--r);"><h3 id="confirmTitle">確認</h3><button class="close-btn" onclick="closeModal('confirmModal')">×</button></div>
+    <div class="modal-body"><p class="confirm-msg" id="confirmMsg"></p><p class="confirm-sub" id="confirmSub"></p></div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('confirmModal')">キャンセル</button>
+      <button class="btn btn-r" id="confirmOkBtn">実行する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== STATE =====
+let adminUser = '';
+let adminPin  = '';
+let editingTeacherName = null;
+let editingBookId      = null;
+let editingBookMedia   = [];
+let currentShelfTeacher = '';
+let confirmCallback     = null;
+let dashboardData       = [];
+let allShelfRecs        = [];
+
+// ===== 自動更新 =====
+let _lastMod   = '0';
+let _pollTimer = null;
+
+function startPolling() {
+  if (_pollTimer) return;
+  _pollTimer = setInterval(function() {
+    google.script.run.withSuccessHandler(function(ts) {
+      if (_lastMod !== '0' && ts !== _lastMod) {
+        _lastMod = ts;
+        onAutoRefresh();
+      } else {
+        _lastMod = ts;
+      }
+    }).getLastModified();
+  }, 10000);
+}
+
+function stopPolling() {
+  if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+}
+
+function onAutoRefresh() {
+  // モーダルが開いていたら更新スキップ
+  if (document.querySelector('.overlay.active')) return;
+  loadAll();
+  if (currentShelfTeacher) reloadShelf();
+  showToast();
+}
+
+function showToast() {
+  const el = document.getElementById('autoRefreshToast');
+  el.classList.add('show');
+  setTimeout(function() { el.classList.remove('show'); }, 2500);
+}
+
+// ===== LOGIN =====
+window.onload = function() {
+  if (typeof google === 'undefined') {
+    document.body.innerHTML = '<div style="text-align:center;padding:60px;font-size:16px;">GASのデプロイURLからアクセスしてください。</div>';
+    return;
+  }
+  google.script.run.withSuccessHandler(function(names) {
+    const sel = document.getElementById('adNameSel');
+    names.forEach(n => { const o = document.createElement('option'); o.value = o.text = n; sel.appendChild(o); });
+  }).getTeacherList();
+};
+
+function ap(n) { if (adminPin.length < 6) { adminPin += n; upd(); } }
+function cp()  { adminPin = ''; upd(); }
+function upd() { document.getElementById('adPinDisp').textContent = '●'.repeat(adminPin.length) || '\u00a0'; }
+
+function sp() {
+  const name = document.getElementById('adNameSel').value;
+  if (!name) { document.getElementById('adErr').textContent = '名前を選んでください'; return; }
+  if (!adminPin) return;
+  document.getElementById('adErr').textContent = '';
+  google.script.run.withSuccessHandler(function(r) {
+    if (r.success) {
+      adminUser = name;
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('mainScreen').style.display  = 'block';
+      document.getElementById('navName').textContent = adminUser + ' 先生';
+      if (r.type === 'REGISTER') alert('パスワードを登録しました！');
+      loadAll();
+      // 自動更新開始
+      google.script.run.withSuccessHandler(function(ts) { _lastMod = ts; startPolling(); }).getLastModified();
+    } else { document.getElementById('adErr').textContent = r.message; cp(); }
+  }).adminLogin(name, adminPin);
+}
+
+function logout() {
+  stopPolling();
+  adminUser = ''; adminPin = '';
+  cp(); // PINをリセット
+  document.getElementById('adErr').textContent = '';
+  document.getElementById('mainScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+// ===== TABS =====
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ===== LOAD ALL =====
+function loadAll() {
+  google.script.run.withSuccessHandler(function(data) {
+    dashboardData = data;
+    renderTeachers(data);
+    populateShelfSelect(data);
+    renderStatsTab(data);
+  }).getAdminDashboard();
+}
+
+// ===== TEACHERS =====
+function renderTeachers(data) {
+  const tb = document.getElementById('teacherTbody');
+  if (!data || data.length === 0) { tb.innerHTML = '<tr><td colspan="8" class="empty">登録されている先生がいません</td></tr>'; return; }
+  tb.innerHTML = data.map(t => {
+    const pin = t.pin || '';
+    const pinCell = pin
+      ? '<span class="pin-text" id="pin_' + t.name + '" data-show="0">●●●●</span> <button class="eye-btn" onclick="togglePin(\'' + esc(t.name) + '\')" title="表示/非表示">👁️</button>'
+      : '<span class="no-pin">未登録</span>';
+    return '<tr>'
+      + '<td><strong>' + esc(t.name) + '</strong></td>'
+      + '<td>' + esc(t.grade) + '</td><td>' + esc(t.class_) + '</td><td>' + esc(t.specialty) + '</td><td>' + esc(t.registeredAt) + '</td>'
+      + '<td><div class="pin-cell">' + pinCell
+      + (pin ? ' <button class="btn btn-sm btn-outline" onclick="openChangePw(\'' + esc(t.name) + '\')">変更</button>'
+             + ' <button class="btn btn-sm btn-r" onclick="doResetPw(\'' + esc(t.name) + '\')">リセット</button>' : '') + '</div></td>'
+      + '<td>' + (t.isAdmin ? '<span class="badge badge-admin">管理者</span> ' : '')
+      + (pin ? '<span class="badge badge-reg">登録済</span>' : '<span class="badge badge-noreg">未設定</span>') + '</td>'
+      + '<td><div class="ops">'
+      + '<button class="btn btn-sm btn-p" onclick="openEditTeacher(\'' + esc(t.name) + '\')">✏️編集</button>'
+      + '<button class="btn btn-sm btn-r" onclick="confirmDeleteTeacher(\'' + esc(t.name) + '\')">🗑️削除</button>'
+      + '</div></td></tr>';
+  }).join('');
+}
+
+function togglePin(name) {
+  const el = document.getElementById('pin_' + name); if (!el) return;
+  const showing = el.getAttribute('data-show') === '1';
+  if (showing) { el.textContent = '●●●●'; el.setAttribute('data-show','0'); }
+  else {
+    const t = dashboardData.find(d => d.name === name);
+    el.textContent = t && t.pin ? t.pin : '(なし)';
+    el.setAttribute('data-show','1');
+  }
+}
+
+function openAddTeacher() {
+  editingTeacherName = null;
+  document.getElementById('teacherModalTitle').textContent = '先生を追加';
+  ['tfName','tfGrade','tfClass','tfSpecialty'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('tfAdmin').checked = false;
+  document.getElementById('tfErr').textContent = '';
+  openModal('teacherModal');
+}
+
+function openEditTeacher(name) {
+  const t = dashboardData.find(d => d.name === name); if (!t) return;
+  editingTeacherName = name;
+  document.getElementById('teacherModalTitle').textContent = '先生を編集';
+  document.getElementById('tfName').value      = t.name;
+  document.getElementById('tfGrade').value     = t.grade;
+  document.getElementById('tfClass').value     = t.class_;
+  document.getElementById('tfSpecialty').value = t.specialty;
+  document.getElementById('tfAdmin').checked   = t.isAdmin;
+  document.getElementById('tfErr').textContent = '';
+  openModal('teacherModal');
+}
+
+function saveTeacher() {
+  const name = document.getElementById('tfName').value.trim();
+  if (!name) { document.getElementById('tfErr').textContent = '氏名は必須です'; return; }
+  const data = { name, grade: document.getElementById('tfGrade').value.trim(),
+    class_: document.getElementById('tfClass').value.trim(),
+    specialty: document.getElementById('tfSpecialty').value.trim(),
+    isAdmin: document.getElementById('tfAdmin').checked };
+  document.getElementById('teacherSaveBtn').disabled = true;
+  const cb = function(r) {
+    document.getElementById('teacherSaveBtn').disabled = false;
+    if (r.success) { closeModal('teacherModal'); loadAll(); }
+    else document.getElementById('tfErr').textContent = r.message || '保存に失敗しました';
+  };
+  if (editingTeacherName) google.script.run.withSuccessHandler(cb).updateTeacher(editingTeacherName, data);
+  else                    google.script.run.withSuccessHandler(cb).addTeacher(data);
+}
+
+function confirmDeleteTeacher(name) {
+  showConfirm('先生を削除', '「' + name + '」先生を削除しますか？', 'この先生のログインができなくなります（記録は残ります）',
+    function() { google.script.run.withSuccessHandler(function(r) { if(r.success) loadAll(); }).deleteTeacher(name); });
+}
+
+function confirmBulkDeleteTeachers() {
+  showConfirm('全員削除', '教員名簿の全先生を削除しますか？', '⚠️ 全員のログインができなくなります（記録は残ります）',
+    function() { google.script.run.withSuccessHandler(function(r) { if(r.success){ alert('完了しました'); loadAll(); } }).bulkDeleteTeachers(); });
+}
+
+// ===== PASSWORDS =====
+let pwTargetName = '';
+function openChangePw(name) {
+  pwTargetName = name;
+  document.getElementById('pwModalTitle').textContent = 'パスワードを変更：' + name + ' 先生';
+  document.getElementById('pwInput').value = '';
+  document.getElementById('pwErr').textContent = '';
+  openModal('pwModal');
+}
+function savePw() {
+  const val = document.getElementById('pwInput').value.trim();
+  if (!val) { document.getElementById('pwErr').textContent = '新しいパスワードを入力してください'; return; }
+  google.script.run.withSuccessHandler(function(r) {
+    if (r.success) { closeModal('pwModal'); loadAll(); alert('変更しました'); }
+    else document.getElementById('pwErr').textContent = '失敗しました';
+  }).changePassword(pwTargetName, val);
+}
+function doResetPw(name) {
+  showConfirm('パスワードをリセット', '「' + name + '」先生のパスワードをリセットしますか？', '次回ログイン時に新しいパスワードを登録できます',
+    function() { google.script.run.withSuccessHandler(function(r){ if(r.success){ alert('リセットしました'); loadAll(); } }).resetPassword(name); });
+}
+
+// ===== SHELF MANAGEMENT =====
+function populateShelfSelect(data) {
+  const sel = document.getElementById('shelfTeacherSel');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">先生を選んでください ▼</option>';
+  data.forEach(t => { const o = document.createElement('option'); o.value = o.text = t.name; if(t.name===cur) o.selected=true; sel.appendChild(o); });
+}
+
+function loadShelf() {
+  const author = document.getElementById('shelfTeacherSel').value;
+  currentShelfTeacher = author;
+  allShelfRecs = [];
+  const statsEl = document.getElementById('shelfStats');
+  const bodyEl  = document.getElementById('shelfBody');
+  const bulkBtn = document.getElementById('bulkDelShelfBtn');
+  if (!author) { statsEl.style.display='none'; bodyEl.innerHTML='<p class="empty">先生を選ぶと書庫が表示されます</p>'; bulkBtn.style.display='none'; return; }
+  bodyEl.innerHTML = '<p class="empty">読み込み中...</p>';
+  google.script.run.withSuccessHandler(function(recs) {
+    allShelfRecs = recs;
+    updateShelfUI(recs);
+    renderShelfTable(recs);
+  }).getAdminRecords(author);
+}
+
+function reloadShelf() {
+  if (!currentShelfTeacher) return;
+  google.script.run.withSuccessHandler(function(recs) {
+    allShelfRecs = recs;
+    updateShelfUI(recs);
+    renderShelfTable(recs);
+  }).getAdminRecords(currentShelfTeacher);
+}
+
+function updateShelfUI(recs) {
+  const total      = recs.length;
+  const totalViews = recs.reduce((s,r) => s + (r.viewCount||0), 0);
+  const statsEl    = document.getElementById('shelfStats');
+  const bulkBtn    = document.getElementById('bulkDelShelfBtn');
+  if (total > 0) {
+    statsEl.innerHTML = '<span>📚 合計 <strong>' + total + '</strong> 冊</span><span>👁️ 総閲覧数 <strong>' + totalViews + '</strong> 回</span>';
+    statsEl.style.display = 'flex'; bulkBtn.style.display = '';
+  } else { statsEl.style.display='none'; bulkBtn.style.display='none'; }
+}
+
+function renderShelfTable(recs) {
+  const el = document.getElementById('shelfBody');
+  if (!recs || recs.length === 0) { el.innerHTML = '<p class="empty">記録がありません</p>'; return; }
+  let html = '<table class="tbl"><thead><tr><th>タイトル</th><th>いつ</th><th>閲覧数</th><th>操作</th></tr></thead><tbody>';
+  recs.forEach(r => {
+    html += '<tr><td><strong>' + esc(r.title) + '</strong></td><td>' + fmtDate(r.when) + '</td><td>👁️ ' + (r.viewCount||0) + ' 回</td>'
+      + '<td><div class="ops">'
+      + '<button class="btn btn-sm btn-p" onclick="viewBook(\'' + esc(r.id) + '\')">読む</button>'
+      + '<button class="btn btn-sm btn-o" onclick="editBook(\'' + esc(r.id) + '\')">編集</button>'
+      + '<button class="btn btn-sm btn-r" onclick="confirmDelBook(\'' + esc(r.id) + '\',\'' + esc(r.title) + '\')">削除</button>'
+      + '</div></td></tr>';
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+function viewBook(id) {
+  const r = allShelfRecs.find(x => x.id === id); if (!r) return;
+  document.getElementById('bvTitle').textContent = r.title;
+  let body = '';
+  if (r.wherePractice) body += '<div class="rec-section"><div class="rec-label">📍 どこで</div><div class="rec-content">' + esc(r.wherePractice) + '</div></div>';
+  if (r.who)           body += '<div class="rec-section"><div class="rec-label">👥 誰が</div><div class="rec-content">'   + esc(r.who)           + '</div></div>';
+  let behHtml = r.behaviors ? esc(r.behaviors) : '';
+  if (r.media && r.media.length > 0) {
+    behHtml += '<div class="media-thumb">' + r.media.map(m => '<img src="' + m.url + '" onclick="window.open(\'' + m.url + '\',\'_blank\')" title="クリックで拡大">').join('') + '</div>';
+  }
+  if (behHtml) body += '<div class="rec-section"><div class="rec-label">📝 具体的な言動</div><div class="rec-content">' + behHtml + '</div></div>';
+  if (r.approach) body += '<div class="rec-section"><div class="rec-label">💡 教師の仕掛け</div><div class="rec-content">' + esc(r.approach) + '</div></div>';
+  if (r.results)  body += '<div class="rec-section"><div class="rec-label">✅ 成果と課題</div><div class="rec-content">'  + esc(r.results)  + '</div></div>';
+  document.getElementById('bvBody').innerHTML = body || '<p class="empty">内容がありません</p>';
+  const foot = document.getElementById('bvFoot'); foot.innerHTML = '';
+  addBtn(foot, 'btn-s', '✕ 閉じる', function() { closeModal('bookViewModal'); });
+  addBtn(foot, 'btn-o', '✏️ 編集',  function() { closeModal('bookViewModal'); editBook(id); });
+  addBtn(foot, 'btn-r', '🗑️ 削除', function() { closeModal('bookViewModal'); confirmDelBook(id, r.title); });
+  openModal('bookViewModal');
+}
+
+function editBook(id) {
+  const r = allShelfRecs.find(x => x.id === id); if (!r) return;
+  editingBookId    = id;
+  editingBookMedia = r.media ? [...r.media] : [];
+  document.getElementById('beTitle').value     = r.title         || '';
+  document.getElementById('beWhen').value      = r.when          || '';
+  document.getElementById('beWhere').value     = r.wherePractice || '';
+  document.getElementById('beWho').value       = r.who           || '';
+  document.getElementById('beBehaviors').value = r.behaviors     || '';
+  document.getElementById('beApproach').value  = r.approach      || '';
+  document.getElementById('beResults').value   = r.results       || '';
+  renderBeMediaPreview();
+  openModal('bookEditModal');
+}
+
+function renderBeMediaPreview() {
+  const c = document.getElementById('beMediaPreview'); c.innerHTML = '';
+  editingBookMedia.forEach((m, i) => {
+    const d = document.createElement('div'); d.style.cssText = 'position:relative;display:inline-block;';
+    d.innerHTML = '<img src="' + m.url + '" style="width:80px;height:60px;object-fit:cover;border-radius:6px;">'
+      + '<button onclick="editingBookMedia.splice(' + i + ',1);renderBeMediaPreview()" style="position:absolute;top:-5px;right:-5px;background:#C62828;color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>';
+    c.appendChild(d);
+  });
+}
+
+function saveBookEdit() {
+  const title = document.getElementById('beTitle').value.trim();
+  if (!title) { alert('タイトルは必須です'); return; }
+  const data = { title, when: document.getElementById('beWhen').value,
+    wherePractice: document.getElementById('beWhere').value,
+    who: document.getElementById('beWho').value,
+    behaviors: document.getElementById('beBehaviors').value,
+    approach: document.getElementById('beApproach').value,
+    results: document.getElementById('beResults').value,
+    media: editingBookMedia };
+  google.script.run.withSuccessHandler(function(r) {
+    if (r.success) { closeModal('bookEditModal'); reloadShelf(); loadAll(); alert('更新しました'); }
+    else alert('更新に失敗しました: ' + (r.message||''));
+  }).adminUpdateRecord(editingBookId, data);
+}
+
+function confirmDelBook(id, title) {
+  showConfirm('記録を削除', '「' + title + '」を削除しますか？', 'この操作は元に戻せません',
+    function() { google.script.run.withSuccessHandler(function(r) { if(r.success){ reloadShelf(); loadAll(); } }).adminDeleteRecord(id); });
+}
+
+function confirmBulkDeleteShelf() {
+  const author = currentShelfTeacher; if (!author) return;
+  showConfirm('一括削除', '「' + author + '」先生の記録をすべて削除しますか？', '⚠️ この操作は元に戻せません',
+    function() { google.script.run.withSuccessHandler(function(r) { if(r.success){ alert(r.count + '件削除しました'); reloadShelf(); loadAll(); } }).adminBulkDeleteRecords(author); });
+}
+
+// ===== STATS =====
+function renderStatsTab(data) {
+  const totalTeachers = data.length;
+  const totalBooks    = data.reduce((s,t) => s + t.bookCount, 0);
+  const totalViews    = data.reduce((s,t) => s + t.totalViews, 0);
+  document.getElementById('statsGrid').innerHTML =
+    statCard('👥','登録先生数', totalTeachers,'名') +
+    statCard('📚','総記録数',   totalBooks,   '冊') +
+    statCard('👁️','総閲覧数',   totalViews,   '回');
+  const tb = document.getElementById('statsTbody');
+  if (!data || data.length === 0) { tb.innerHTML = '<tr><td colspan="4" class="empty">データがありません</td></tr>'; return; }
+  const sorted = [...data].sort((a,b) => b.totalViews - a.totalViews);
+  tb.innerHTML = sorted.map(t => {
+    const belong = [t.grade, t.class_, t.specialty].filter(x=>x).join('・') || '—';
+    return '<tr><td><strong>' + esc(t.name) + '</strong> ' + (t.isAdmin ? '<span class="badge badge-admin">管理者</span>' : '') + '</td><td>' + esc(belong) + '</td><td>' + t.bookCount + ' 冊</td><td>' + t.totalViews + ' 回</td></tr>';
+  }).join('');
+}
+
+function statCard(icon, label, value, unit) {
+  return '<div class="stat-card"><div class="label">' + icon + ' ' + label + '</div><div class="value">' + value + '</div><div class="sub">' + unit + '</div></div>';
+}
+
+// ===== MODAL HELPERS =====
+function openModal(id)  { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+function addBtn(parent, cls, text, fn) {
+  const b = document.createElement('button'); b.className = 'btn ' + cls; b.textContent = text; b.onclick = fn; parent.appendChild(b);
+}
+
+function showConfirm(title, msg, sub, cb) {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent   = msg;
+  document.getElementById('confirmSub').textContent   = sub || '';
+  confirmCallback = cb;
+  document.getElementById('confirmOkBtn').onclick = function() { closeModal('confirmModal'); if(confirmCallback) confirmCallback(); };
+  openModal('confirmModal');
+}
+
+// ===== UTILS =====
+function goToPage(page) {
+  google.script.run.withSuccessHandler(function(url) {
+    window.top.location.href = page ? url + '?page=' + page : url;
+  }).getAppUrl();
+}
+function esc(s) {
+  if (!s) return '';
+  return s.toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\n/g,'<br>');
+}
+function fmtDate(s) {
+  if (!s) return '';
+  try { const d=new Date(s); if(isNaN(d)) return s; return d.getFullYear()+'/'+(d.getMonth()+1).toString().padStart(2,'0')+'/'+d.getDate().toString().padStart(2,'0'); } catch(e){ return s; }
+}
+</script>
+</body>
+</html>

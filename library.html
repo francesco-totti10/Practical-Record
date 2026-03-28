@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<base target="_top">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>実践の本棚｜公共図書館</title>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary: #5D4037; --teal: #26A69A; --orange: #FF7043;
+  --bg: #FFF8E1; --shelf: #FFECB3; --wood: #A1887F; --paper: #FFFCF5; --text: #3E2723;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'BIZ UDPGothic', 'Hiragino Kaku Gothic ProN', sans-serif; background: var(--bg); color: var(--text); }
+
+.lib-header { background: linear-gradient(135deg, var(--primary), #8D6E63); color: white; padding: 28px 24px 20px; text-align: center; }
+.lib-header h1 { font-size: 26px; margin-bottom: 4px; }
+.lib-header .sub { font-size: 14px; opacity: .85; }
+
+.controls { background: white; padding: 14px 20px; border-bottom: 3px solid var(--teal); display: flex; flex-wrap: wrap; gap: 12px; align-items: center; position: sticky; top: 0; z-index: 50; box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+.controls label { font-size: 13px; font-weight: bold; color: var(--primary); }
+.controls select { padding: 7px 12px; border: 1.5px solid #D7CCC8; border-radius: 8px; font-family: inherit; font-size: 14px; color: var(--text); background: white; }
+.controls select:focus { outline: none; border-color: var(--teal); }
+.sort-btns { display: flex; gap: 6px; margin-left: auto; }
+.sort-btn { padding: 7px 14px; border: 1.5px solid #D7CCC8; background: white; border-radius: 20px; font-family: inherit; font-size: 13px; font-weight: bold; cursor: pointer; color: var(--text); transition: all .15s; }
+.sort-btn.active { background: var(--teal); color: white; border-color: var(--teal); }
+.count-badge { background: var(--teal); color: white; font-size: 12px; font-weight: bold; padding: 3px 10px; border-radius: 12px; }
+
+.lib-body { width: 100%; padding: 24px 20px 60px; }
+.sec-label { font-size: 15px; font-weight: bold; color: var(--primary); padding: 8px 14px; margin-bottom: 10px; border-left: 5px solid var(--teal); background: rgba(38,166,154,.08); border-radius: 0 7px 7px 0; }
+
+.shelf-row { margin-bottom: 50px; }
+.shelf-books { display: flex; flex-wrap: wrap; gap: 22px; padding: 10px 10px 0; align-items: flex-end; min-height: 185px; position: relative; z-index: 2; }
+.shelf-bar { height: 20px; background: linear-gradient(to bottom, var(--wood), var(--shelf)); border-radius: 4px; box-shadow: 0 8px 12px rgba(0,0,0,.2); }
+
+.book-card { width: 118px; height: 172px; border-radius: 4px 10px 10px 4px; box-shadow: 4px 4px 12px rgba(0,0,0,.2); cursor: pointer; position: relative; transition: transform .2s; display: flex; flex-direction: column; padding: 8px; z-index: 2; }
+.book-card:hover { transform: translateY(-7px) scale(1.04); z-index: 10; }
+.book-card::before { content:''; position:absolute; top:0; left:0; width:11px; height:100%; background:rgba(255,255,255,.22); border-radius:4px 0 0 4px; }
+.bc-1{background:linear-gradient(135deg,#ff9a9e,#fecfef)}.bc-2{background:linear-gradient(135deg,#a18cd1,#fbc2eb)}.bc-3{background:linear-gradient(135deg,#84fab0,#8fd3f4)}.bc-4{background:linear-gradient(135deg,#ffecd2,#fcb69f)}.bc-5{background:linear-gradient(135deg,#a1c4fd,#c2e9fb)}.bc-6{background:linear-gradient(135deg,#f093fb,#f5576c)}.bc-7{background:linear-gradient(135deg,#4facfe,#00f2fe)}.bc-8{background:linear-gradient(135deg,#f6d365,#fda085)}
+.book-title-v { writing-mode:vertical-rl; text-orientation:upright; font-weight:bold; font-size:14px; color:#333; background:rgba(255,255,255,.88); padding:4px; max-height:122px; border-radius:3px; align-self:center; flex:1; overflow:hidden; }
+.book-date-l { font-size:9px; color:#555; background:rgba(255,255,255,.9); padding:2px 4px; border-radius:4px; position:absolute; bottom:6px; right:5px; font-weight:bold; }
+.view-badge { position:absolute; top:-9px; right:-7px; background:#FF7043; color:white; font-size:9px; font-weight:bold; padding:2px 6px; border-radius:9px; white-space:nowrap; }
+
+.empty { text-align:center; padding:60px 20px; color:#aaa; font-size:16px; }
+
+.overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:1000; justify-content:center; align-items:flex-start; padding:20px; overflow-y:auto; }
+.overlay.active { display:flex; }
+.book-modal { background:var(--paper); width:100%; max-width:700px; border-radius:14px; box-shadow:0 20px 50px rgba(0,0,0,.4); overflow:hidden; margin:auto; }
+.bm-head { background:var(--primary); color:white; padding:20px 22px; }
+.bm-head h2 { font-size:19px; line-height:1.4; }
+.bm-head .meta { font-size:13px; opacity:.82; margin-top:5px; }
+.bm-body { padding:20px 22px; }
+.rec-section { margin-bottom:18px; border-bottom:1px solid #EFEBE9; padding-bottom:16px; }
+.rec-section:last-child { border-bottom:none; }
+.rec-label { font-size:11px; font-weight:bold; color:var(--teal); letter-spacing:.5px; margin-bottom:5px; }
+.rec-content { font-size:15px; line-height:1.8; white-space:pre-wrap; color:var(--text); }
+.media-gallery { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+.media-gallery img { max-width:180px; max-height:130px; border-radius:7px; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.2); object-fit:cover; }
+.bm-foot { padding:14px 22px; background:#f5f5f5; display:flex; gap:10px; border-top:1px solid #ddd; align-items:center; }
+.view-info { font-size:12px; color:#888; margin-left:auto; }
+
+.btn { display:inline-flex; align-items:center; gap:5px; padding:9px 18px; border:none; border-radius:20px; cursor:pointer; font-family:inherit; font-size:14px; font-weight:bold; transition:all .12s; }
+.btn:active { opacity:.8; transform:translateY(2px); }
+.btn-back { background:#90A4AE; color:white; box-shadow:0 3px 0 #546E7A; }
+
+/* 自動更新トースト */
+#autoRefreshToast { position:fixed; bottom:16px; right:16px; background:rgba(38,166,154,.92); color:white; padding:8px 16px; border-radius:20px; font-size:13px; font-weight:bold; z-index:9999; opacity:0; transition:opacity .3s; pointer-events:none; }
+#autoRefreshToast.show { opacity:1; }
+
+@media(max-width:600px){
+  .book-card { width:95px; height:140px; }
+  .book-title-v { font-size:12px; }
+  .shelf-books { gap:14px; }
+  .controls { flex-direction:column; align-items:flex-start; }
+  .sort-btns { margin-left:0; }
+}
+</style>
+</head>
+<body>
+
+<div id="autoRefreshToast">🔄 自動更新しました</div>
+
+<div class="lib-header">
+  <div style="font-size:40px;margin-bottom:8px;">🏛️</div>
+  <h1>公共図書館</h1>
+  <div class="sub">実践の本棚｜すべての先生の記録をご覧いただけます</div>
+</div>
+
+<div class="controls">
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+    <label for="authorFilter">📚 著者：</label>
+    <select id="authorFilter" onchange="applyFilter()">
+      <option value="">すべての先生</option>
+    </select>
+    <span id="countBadge" class="count-badge">0 冊</span>
+  </div>
+  <div class="sort-btns">
+    <button class="sort-btn active" id="sortTime" onclick="setSort('time')">📅 新着順</button>
+    <button class="sort-btn" id="sortAuthor" onclick="setSort('author')">👤 著者別</button>
+  </div>
+</div>
+
+<div class="lib-body">
+  <div id="libBody"><p class="empty">読み込み中...</p></div>
+</div>
+
+<div id="bookModal" class="overlay">
+  <div class="book-modal">
+    <div class="bm-head">
+      <h2 id="bmTitle"></h2>
+      <div class="meta" id="bmMeta"></div>
+    </div>
+    <div class="bm-body" id="bmBody"></div>
+    <div class="bm-foot">
+      <button class="btn btn-back" onclick="closeModal()">✕ 閉じる</button>
+      <span class="view-info" id="bmViewCount"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+if (typeof google === 'undefined') {
+  document.querySelector('.lib-body').innerHTML = '<p class="empty">GASのデプロイURLからアクセスしてください。</p>';
+}
+
+let allRecords    = [];
+let currentSort   = 'time';
+let currentAuthor = '';
+let modalIsOpen   = false;
+const COLORS      = ['bc-1','bc-2','bc-3','bc-4','bc-5','bc-6','bc-7','bc-8'];
+const authorColorMap = {};
+let colorIdx = 0;
+
+// ===== 自動更新 =====
+let _lastMod   = '0';
+let _pollTimer = null;
+
+function startPolling() {
+  if (_pollTimer) return;
+  _pollTimer = setInterval(function() {
+    google.script.run.withSuccessHandler(function(ts) {
+      if (_lastMod !== '0' && ts !== _lastMod) {
+        _lastMod = ts;
+        onAutoRefresh();
+      } else {
+        _lastMod = ts;
+      }
+    }).getLastModified();
+  }, 10000);
+}
+
+function onAutoRefresh() {
+  // モーダルが開いている間は見た目の更新のみ（バックグラウンドでデータ取得）
+  google.script.run.withSuccessHandler(function(recs) {
+    allRecords = recs;
+    updateAuthorFilter(recs);
+    if (!modalIsOpen) render();
+    showToast();
+  }).getAllRecords();
+}
+
+function showToast() {
+  const el = document.getElementById('autoRefreshToast');
+  el.classList.add('show');
+  setTimeout(function() { el.classList.remove('show'); }, 2500);
+}
+
+// ===== LOAD =====
+window.onload = function() {
+  if (typeof google === 'undefined') return;
+  google.script.run.withSuccessHandler(function(recs) {
+    allRecords = recs;
+    buildAuthorFilter(recs);
+    render();
+    // 初回ロード後にタイムスタンプ取得してポーリング開始
+    google.script.run.withSuccessHandler(function(ts) { _lastMod = ts; startPolling(); }).getLastModified();
+  }).getAllRecords();
+};
+
+function buildAuthorFilter(recs) {
+  const authors = [...new Set(recs.map(r => r.author))].sort();
+  const sel = document.getElementById('authorFilter');
+  sel.innerHTML = '<option value="">すべての先生</option>';
+  authors.forEach(a => {
+    const o = document.createElement('option'); o.value = o.text = a; sel.appendChild(o);
+    if (!authorColorMap[a]) authorColorMap[a] = COLORS[colorIdx++ % COLORS.length];
+  });
+}
+
+function updateAuthorFilter(recs) {
+  // フィルター選択状態を保持しながら更新
+  const authors = [...new Set(recs.map(r => r.author))].sort();
+  const sel = document.getElementById('authorFilter');
+  const currentVal = sel.value;
+  sel.innerHTML = '<option value="">すべての先生</option>';
+  authors.forEach(a => {
+    const o = document.createElement('option'); o.value = o.text = a;
+    if (a === currentVal) o.selected = true;
+    sel.appendChild(o);
+    if (!authorColorMap[a]) authorColorMap[a] = COLORS[colorIdx++ % COLORS.length];
+  });
+  currentAuthor = sel.value; // 選択が消えた場合をリセット
+}
+
+function applyFilter() {
+  currentAuthor = document.getElementById('authorFilter').value;
+  render();
+}
+
+function setSort(type) {
+  currentSort = type;
+  document.getElementById('sortTime').classList.toggle('active', type === 'time');
+  document.getElementById('sortAuthor').classList.toggle('active', type === 'author');
+  render();
+}
+
+function getColorFor(author) {
+  if (!authorColorMap[author]) authorColorMap[author] = COLORS[colorIdx++ % COLORS.length];
+  return authorColorMap[author];
+}
+
+function render() {
+  let recs = [...allRecords];
+  if (currentAuthor) recs = recs.filter(r => r.author === currentAuthor);
+  document.getElementById('countBadge').textContent = recs.length + ' 冊';
+  const body = document.getElementById('libBody');
+  if (recs.length === 0) { body.innerHTML = '<p class="empty">📭 記録がありません</p>'; return; }
+  body.innerHTML = '';
+
+  if (currentSort === 'author') {
+    const byAuthor = {}, order = [];
+    recs.forEach(r => { if (!byAuthor[r.author]) { byAuthor[r.author] = []; order.push(r.author); } byAuthor[r.author].push(r); });
+    order.forEach(author => {
+      const sec = document.createElement('div'); sec.className = 'shelf-row';
+      sec.innerHTML = '<div class="sec-label">📚 ' + esc(author) + ' 先生の記録 <span style="font-size:13px;color:#888;font-weight:normal;">（' + byAuthor[author].length + '冊）</span></div>';
+      const booksDiv = document.createElement('div'); booksDiv.className = 'shelf-books';
+      byAuthor[author].forEach((r, i) => booksDiv.appendChild(makeCard(r, i)));
+      const bar = document.createElement('div'); bar.className = 'shelf-bar';
+      sec.appendChild(booksDiv); sec.appendChild(bar);
+      body.appendChild(sec);
+    });
+  } else {
+    const sec = document.createElement('div'); sec.className = 'shelf-row';
+    const label = document.createElement('div'); label.className = 'sec-label';
+    label.innerHTML = '📅 新着順 <span style="font-size:13px;color:#888;font-weight:normal;">（全' + recs.length + '冊）</span>';
+    sec.appendChild(label);
+    const booksDiv = document.createElement('div'); booksDiv.className = 'shelf-books';
+    recs.forEach((r, i) => booksDiv.appendChild(makeCard(r, i)));
+    const bar = document.createElement('div'); bar.className = 'shelf-bar';
+    sec.appendChild(booksDiv); sec.appendChild(bar);
+    body.appendChild(sec);
+  }
+}
+
+function makeCard(rec, idx) {
+  const card = document.createElement('div');
+  card.className = 'book-card ' + getColorFor(rec.author);
+  card.innerHTML = '<div class="book-title-v">' + esc(rec.title) + '</div>'
+    + '<div class="book-date-l">' + (rec.when ? fmtDate(rec.when) : '日付なし') + '</div>'
+    + (rec.viewCount > 0 ? '<div class="view-badge">👁️' + rec.viewCount + '</div>' : '');
+  card.onclick = function() { openBook(rec); };
+  return card;
+}
+
+function openBook(rec) {
+  modalIsOpen = true;
+  document.getElementById('bmTitle').textContent = rec.title;
+  const when = rec.when ? fmtDate(rec.when) : '';
+  document.getElementById('bmMeta').innerHTML = '✍️ ' + esc(rec.author) + ' 先生' + (when ? '　📅 ' + when : '');
+  document.getElementById('bmViewCount').textContent = '👁️ 閲覧数：' + ((rec.viewCount||0) + 1) + ' 回';
+  let body = '';
+  if (rec.wherePractice) body += secHtml('📍 どこで', esc(rec.wherePractice));
+  if (rec.who)           body += secHtml('👥 誰が',   esc(rec.who));
+  let behHtml = rec.behaviors ? esc(rec.behaviors) : '';
+  if (rec.media && rec.media.length > 0) {
+    behHtml += '<div class="media-gallery">' + rec.media.map(m => '<img src="' + m.url + '" onclick="window.open(\'' + m.url + '\',\'_blank\')" title="クリックで拡大">').join('') + '</div>';
+  }
+  if (behHtml) body += secHtml('📝 具体的な言動', behHtml, true);
+  if (rec.approach) body += secHtml('💡 教師の仕掛け', esc(rec.approach));
+  if (rec.results)  body += secHtml('✅ 成果と課題',   esc(rec.results));
+  document.getElementById('bmBody').innerHTML = body || '<p style="text-align:center;color:#aaa;padding:20px;">内容がありません</p>';
+  document.getElementById('bookModal').classList.add('active');
+  google.script.run.incrementViewCount(rec.id);
+  const idx = allRecords.findIndex(r => r.id === rec.id);
+  if (idx >= 0) allRecords[idx].viewCount = (allRecords[idx].viewCount||0) + 1;
+}
+
+function secHtml(label, content) {
+  return '<div class="rec-section"><div class="rec-label">' + label + '</div><div class="rec-content">' + content + '</div></div>';
+}
+
+function closeModal() {
+  modalIsOpen = false;
+  document.getElementById('bookModal').classList.remove('active');
+  render(); // 閲覧数バッジを更新
+}
+
+function esc(s) {
+  if (!s) return '';
+  return s.toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+function fmtDate(s) {
+  try { const d=new Date(s); if(isNaN(d)) return s; return d.getFullYear()+'/'+(d.getMonth()+1).toString().padStart(2,'0')+'/'+d.getDate().toString().padStart(2,'0'); } catch(e){ return s; }
+}
+</script>
+</body>
+</html>

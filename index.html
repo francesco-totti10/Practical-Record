@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>実践の本棚</title>
+  <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary:    #5D4037;
+      --secondary:  #26A69A;
+      --accent:     #FF7043;
+      --edit:       #FFA726;
+      --del:        #EF5350;
+      --bg:         #FFF8E1;
+      --shelf:      #FFECB3;
+      --wood:       #A1887F;
+      --paper:      #FFFCF5;
+      --text:       #3E2723;
+    }
+    * { box-sizing: border-box; }
+    body { font-family: 'BIZ UDPGothic', 'Hiragino Kaku Gothic ProN', sans-serif; background: var(--bg); margin: 0; padding: 0; color: var(--text); overflow-x: hidden; }
+
+    .btn { display: inline-block; padding: 12px 24px; border: none; border-radius: 30px; font-size: 15px; font-weight: bold; cursor: pointer; transition: all 0.12s; font-family: inherit; text-align: center; }
+    .btn:active { transform: translateY(3px) !important; box-shadow: none !important; }
+    .btn-primary { background: var(--secondary); color: white; box-shadow: 0 4px 0 #00796B; }
+    .btn-orange  { background: var(--accent);    color: white; box-shadow: 0 4px 0 #D84315; }
+    .btn-edit    { background: var(--edit);      color: white; box-shadow: 0 4px 0 #E65100; }
+    .btn-del     { background: var(--del);       color: white; box-shadow: 0 4px 0 #B71C1C; }
+    .btn-back    { background: #90A4AE;          color: white; box-shadow: 0 4px 0 #546E7A; }
+    .btn-full    { width: 100%; max-width: 300px; display: block; margin: 12px auto; padding: 15px; font-size: 17px; }
+
+    .screen { display: none; min-height: 100vh; }
+    .screen.active { display: block; }
+
+    .app-header { background: white; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 4px solid var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+    .app-header h2 { margin: 0; font-size: 18px; color: var(--primary); }
+
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; font-weight: bold; font-size: 14px; color: var(--primary); margin-bottom: 5px; }
+    .form-group label .req { color: var(--del); margin-left: 3px; }
+    .form-group input[type="text"], .form-group input[type="date"], .form-group textarea {
+      width: 100%; padding: 11px 14px; font-size: 15px; border: 2px solid #D7CCC8; border-radius: 10px;
+      font-family: inherit; background: white; color: var(--text); transition: border-color 0.2s;
+    }
+    .form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--secondary); }
+    .form-group textarea { resize: vertical; min-height: 110px; line-height: 1.7; }
+    .section-divider { background: var(--secondary); color: white; padding: 7px 14px; border-radius: 7px; font-weight: bold; font-size: 13px; margin: 22px 0 14px; display: flex; align-items: center; gap: 6px; }
+
+    .bookshelf-container { width: 100%; padding: 28px 20px 36px; background: var(--shelf); border-left: 10px solid var(--primary); border-right: 10px solid var(--primary); border-bottom: 10px solid var(--primary); min-height: 50vh; box-shadow: inset 0 0 50px rgba(0,0,0,0.08); }
+    .shelf-section { margin-bottom: 55px; }
+    .shelf-label { font-size: 16px; font-weight: bold; color: var(--primary); padding: 8px 16px; margin-bottom: 10px; border-left: 5px solid var(--secondary); background: rgba(38,166,154,0.1); border-radius: 0 7px 7px 0; }
+    .shelf-books { display: flex; flex-wrap: wrap; gap: 22px; padding: 10px 12px 0; min-height: 190px; align-items: flex-end; position: relative; z-index: 2; }
+    .shelf-bar { width: 100%; height: 20px; background: linear-gradient(to bottom, var(--wood), var(--shelf)); border-radius: 4px; box-shadow: 0 8px 12px rgba(0,0,0,0.2); }
+    .empty-shelf { background: rgba(255,255,255,0.75); padding: 30px; border-radius: 10px; text-align: center; color: #888; font-size: 15px; width: 100%; }
+
+    .book-card { width: 118px; height: 172px; border-radius: 4px 10px 10px 4px; box-shadow: 4px 4px 14px rgba(0,0,0,0.2); cursor: pointer; position: relative; transition: transform 0.2s; display: flex; flex-direction: column; padding: 8px; z-index: 2; }
+    .book-card:hover { transform: translateY(-6px) scale(1.03); z-index: 10; }
+    .book-card::before { content: ''; position: absolute; top: 0; left: 0; width: 11px; height: 100%; background: rgba(255,255,255,0.22); border-radius: 4px 0 0 4px; }
+    .bc-1{background:linear-gradient(135deg,#ff9a9e,#fecfef)}.bc-2{background:linear-gradient(135deg,#a18cd1,#fbc2eb)}.bc-3{background:linear-gradient(135deg,#84fab0,#8fd3f4)}.bc-4{background:linear-gradient(135deg,#ffecd2,#fcb69f)}.bc-5{background:linear-gradient(135deg,#a1c4fd,#c2e9fb)}.bc-6{background:linear-gradient(135deg,#f093fb,#f5576c)}.bc-7{background:linear-gradient(135deg,#4facfe,#00f2fe)}.bc-8{background:linear-gradient(135deg,#f6d365,#fda085)}
+    .book-title-vertical { writing-mode: vertical-rl; text-orientation: upright; font-weight: bold; font-size: 14px; color: #333; background: rgba(255,255,255,0.88); padding: 4px; max-height: 122px; border-radius: 3px; align-self: center; flex: 1; overflow: hidden; }
+    .book-date-label { font-size: 9px; color: #555; background: rgba(255,255,255,0.9); padding: 2px 4px; border-radius: 5px; position: absolute; bottom: 6px; right: 5px; font-weight: bold; }
+
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.78); z-index: 1000; justify-content: center; align-items: flex-start; padding: 20px; overflow-y: auto; }
+    .modal-overlay.active { display: flex; }
+    .book-modal-content { background: var(--paper); width: 100%; max-width: 720px; border-radius: 14px; box-shadow: 0 20px 50px rgba(0,0,0,0.4); overflow: hidden; margin: auto; }
+    .book-modal-header { background: var(--primary); color: white; padding: 20px 24px; }
+    .book-modal-header h2 { margin: 0; font-size: 20px; line-height: 1.4; }
+    .book-modal-header .meta { font-size: 13px; opacity: 0.82; margin-top: 5px; }
+    .book-modal-body { padding: 22px 24px; }
+    .record-section { margin-bottom: 20px; border-bottom: 1px solid #EFEBE9; padding-bottom: 18px; }
+    .record-section:last-child { border-bottom: none; }
+    .rec-label { font-size: 12px; font-weight: bold; color: var(--secondary); letter-spacing: 0.5px; margin-bottom: 6px; }
+    .rec-content { font-size: 15px; line-height: 1.8; white-space: pre-wrap; color: var(--text); }
+    .media-gallery { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+    .media-gallery img { max-width: 180px; max-height: 130px; border-radius: 7px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2); object-fit: cover; }
+    .book-modal-footer { padding: 14px 24px; background: #f5f5f5; display: flex; gap: 10px; flex-wrap: wrap; border-top: 1px solid #ddd; }
+
+    .pin-modal-content { background: white; padding: 28px; border-radius: 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 4px solid var(--secondary); width: 310px; }
+    .pin-display { background: #eee; font-size: 32px; letter-spacing: 10px; padding: 12px; margin: 14px 0; border-radius: 10px; border: 2px solid #ccc; font-family: monospace; height: 52px; line-height: 52px; color: #333; }
+    .num-pad { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+    .num-btn { background: #E0F7FA; border: 2px solid #80DEEA; border-radius: 50%; height: 62px; font-size: 24px; font-weight: bold; color: #006064; cursor: pointer; box-shadow: 0 4px 0 #4DD0E1; font-family: inherit; transition: transform 0.1s; }
+    .num-btn:active { transform: translateY(4px); box-shadow: none; }
+    .num-btn.clear { background: #FFEBEE; border-color: #EF9A9A; color: #C62828; box-shadow: 0 4px 0 #E57373; }
+    .num-btn.enter { background: #E8F5E9; border-color: #A5D6A7; color: #2E7D32; box-shadow: 0 4px 0 #81C784; }
+
+    .media-upload-area { border: 2px dashed #D7CCC8; border-radius: 10px; padding: 18px; text-align: center; background: #fafafa; cursor: pointer; margin-top: 8px; transition: all 0.2s; }
+    .media-upload-area:hover { border-color: var(--secondary); background: #E0F2F1; }
+    .media-preview-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+    .media-preview-item { position: relative; display: inline-block; }
+    .media-preview-item img { width: 90px; height: 70px; object-fit: cover; border-radius: 7px; }
+    .media-preview-item .rm-btn { position: absolute; top: -6px; right: -6px; background: var(--del); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: inherit; }
+    .upload-badge { font-size: 9px; color: #666; text-align: center; max-width: 90px; background: rgba(255,165,0,0.15); border-radius: 3px; padding: 1px 3px; }
+
+    #loginScreen { background: white; }
+    .login-wrap { max-width: 440px; margin: 0 auto; padding: 50px 20px 40px; text-align: center; }
+    .login-title { font-size: 30px; color: var(--primary); font-weight: bold; }
+    .login-sub   { font-size: 14px; color: #888; margin: 6px 0 30px; }
+    .nav-links   { margin-top: 28px; border-top: 1px solid #EFEBE9; padding-top: 22px; }
+    .nav-links p { font-size: 12px; color: #ccc; margin-bottom: 12px; }
+    .nav-links-row { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+    .nav-link-btn { padding: 10px 20px; border: none; border-radius: 20px; font-family: inherit; font-size: 13px; font-weight: bold; cursor: pointer; transition: all 0.15s; }
+    .nav-link-btn:active { opacity: .8; transform: translateY(2px); }
+    .nav-link-btn.admin   { background: #1565C0; color: white; box-shadow: 0 3px 0 #0D47A1; }
+    .nav-link-btn.library { background: var(--secondary); color: white; box-shadow: 0 3px 0 #00796B; }
+
+    .menu-wrap { max-width: 480px; margin: 0 auto; padding: 40px 20px; text-align: center; }
+    .menu-icon  { font-size: 72px; margin: 16px 0; }
+    .welcome-msg { font-size: 22px; color: var(--primary); font-weight: bold; }
+    .form-wrap  { max-width: 740px; margin: 0 auto; padding: 28px 20px 80px; }
+    .name-select { width: 100%; max-width: 300px; padding: 13px 16px; font-size: 17px; border: 2px solid #D7CCC8; border-radius: 10px; font-family: inherit; background: white; margin-bottom: 18px; color: var(--text); }
+
+    /* 自動更新トースト */
+    #autoRefreshToast { position: fixed; bottom: 16px; right: 16px; background: rgba(38,166,154,0.92); color: white; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: bold; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+    #autoRefreshToast.show { opacity: 1; }
+
+    @media (max-width: 600px) {
+      .book-card { width: 95px; height: 142px; }
+      .book-title-vertical { font-size: 12px; }
+      .book-modal-content { border-radius: 10px; }
+      .bookshelf-container { border-width: 6px; padding: 16px 10px; }
+      .shelf-books { gap: 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== 自動更新トースト ===== -->
+<div id="autoRefreshToast">🔄 自動更新しました</div>
+
+<!-- ===== LOGIN ===== -->
+<div id="loginScreen" class="screen active">
+  <div class="login-wrap">
+    <div class="login-title">📚 実践の本棚</div>
+    <div class="login-sub">小学校教職員 主題研究 実践記録アプリ</div>
+    <p style="font-size:16px;margin-bottom:12px;">お名前を選んでください</p>
+    <select id="nameSelect" class="name-select"><option value="">名前を選ぶ ▼</option></select><br>
+    <button class="btn btn-orange btn-full" onclick="showPinModal()">🔑 ログイン</button>
+
+    <!-- ナビゲーションリンク -->
+    <div class="nav-links">
+      <p>他のページへ移動</p>
+      <div class="nav-links-row">
+        <button class="nav-link-btn admin"   onclick="goToPage('admin')">🔧 管理者ページ</button>
+        <button class="nav-link-btn library" onclick="goToPage('library')">🏛️ 公共図書館</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PIN MODAL ===== -->
+<div id="pinModal" class="modal-overlay">
+  <div class="pin-modal-content">
+    <h3 style="margin:0;font-size:19px;">パスワード入力</h3>
+    <p style="font-size:13px;color:#666;margin:6px 0 0;">初回ログインは任意の番号を登録</p>
+    <div id="pinDisplay" class="pin-display"></div>
+    <div class="num-pad">
+      <button class="num-btn" onclick="addPin(1)">1</button><button class="num-btn" onclick="addPin(2)">2</button><button class="num-btn" onclick="addPin(3)">3</button>
+      <button class="num-btn" onclick="addPin(4)">4</button><button class="num-btn" onclick="addPin(5)">5</button><button class="num-btn" onclick="addPin(6)">6</button>
+      <button class="num-btn" onclick="addPin(7)">7</button><button class="num-btn" onclick="addPin(8)">8</button><button class="num-btn" onclick="addPin(9)">9</button>
+      <button class="num-btn clear" onclick="clearPin()">C</button><button class="num-btn" onclick="addPin(0)">0</button><button class="num-btn enter" onclick="submitPin()">OK</button>
+    </div>
+    <button class="btn btn-back" style="margin-top:14px;font-size:13px;padding:10px 22px;" onclick="closePinModal()">キャンセル</button>
+  </div>
+</div>
+
+<!-- ===== MENU ===== -->
+<div id="menuScreen" class="screen" style="background:white;">
+  <div class="menu-wrap">
+    <div class="menu-icon">📚</div>
+    <div id="welcomeMsg" class="welcome-msg">ようこそ！</div>
+    <p style="color:#888;font-size:14px;margin:6px 0 28px;">主題研究 実践記録アプリ</p>
+    <button class="btn btn-orange btn-full" onclick="showFormScreen(null)">✏️ 新しい実践を記録する</button>
+    <button class="btn btn-edit   btn-full" onclick="showMyShelfScreen()">🗂️ 自分の書庫</button>
+    <button class="btn btn-primary btn-full" onclick="showLibraryScreen()">🏛️ 公共図書館</button>
+    <br>
+    <button class="btn btn-back" style="font-size:13px;padding:9px 20px;" onclick="logout()">← ログアウト</button>
+  </div>
+</div>
+
+<!-- ===== FORM ===== -->
+<div id="formScreen" class="screen" style="background:#fffcf5;">
+  <div class="app-header">
+    <h2 id="formTitle">✏️ 新しい実践を記録</h2>
+    <button class="btn btn-back" style="font-size:13px;padding:8px 16px;" onclick="confirmBackToMenu()">← 戻る</button>
+  </div>
+  <div class="form-wrap">
+    <div class="form-group">
+      <label>📌 タイトル<span class="req">*</span></label>
+      <input type="text" id="fTitle" placeholder="例：算数「分数のわり算」導入場面での子どもの反応">
+    </div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;">
+      <div class="form-group" style="flex:1;min-width:160px;"><label>📅 いつ</label><input type="date" id="fWhen"></div>
+      <div class="form-group" style="flex:2;min-width:180px;"><label>📍 どこで</label><input type="text" id="fWhere" placeholder="例：6年1組 教室"></div>
+    </div>
+    <div class="form-group"><label>👥 誰が</label><input type="text" id="fWho" placeholder="例：6年1組 全員 / Aグループ（5名）"></div>
+    <div class="section-divider">📝 具体的な言動</div>
+    <div class="form-group">
+      <label>テキスト</label>
+      <textarea id="fBehaviors" rows="5" placeholder="児童・生徒の具体的な発言・行動・様子を記録してください。"></textarea>
+    </div>
+    <div class="form-group">
+      <label>📷 写真を追加（任意・JPEG/PNG・1枚5MBまで）</label>
+      <div class="media-upload-area" onclick="document.getElementById('mediaInput').click()">
+        <div style="font-size:26px;">📁</div>
+        <div style="font-size:13px;color:#888;">クリックして画像を選択</div>
+      </div>
+      <input type="file" id="mediaInput" accept="image/jpeg,image/png,image/gif,image/webp" multiple style="display:none;" onchange="handleFileSelect(this.files)">
+      <div id="mediaPreviews" class="media-preview-list"></div>
+    </div>
+    <div class="section-divider">💡 教師の仕掛け</div>
+    <div class="form-group">
+      <textarea id="fApproach" rows="4" placeholder="どのような意図を持って、どのような働きかけをしたか記録してください。"></textarea>
+    </div>
+    <div class="section-divider">✅ 成果と課題</div>
+    <div class="form-group">
+      <textarea id="fResults" rows="5" placeholder="【成果】&#10;...&#10;&#10;【課題】&#10;..."></textarea>
+    </div>
+    <div style="display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin-top:20px;">
+      <button class="btn btn-back" onclick="confirmBackToMenu()">キャンセル</button>
+      <button id="saveBtn" class="btn btn-orange" onclick="saveFormRecord()">💾 保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MY SHELF ===== -->
+<div id="myShelfScreen" class="screen">
+  <div class="app-header" style="border-bottom-color:var(--edit);">
+    <h2 style="color:#E65100;">🗂️ 自分の書庫</h2>
+    <button class="btn btn-back" style="font-size:13px;padding:8px 16px;" onclick="showMenuScreen()">← メニュー</button>
+  </div>
+  <div class="bookshelf-container" id="myShelfContainer" style="border-color:#E65100;">読み込み中...</div>
+</div>
+
+<!-- ===== LIBRARY ===== -->
+<div id="libraryScreen" class="screen">
+  <div class="app-header">
+    <h2>🏛️ 公共図書館</h2>
+    <button class="btn btn-back" style="font-size:13px;padding:8px 16px;" onclick="showMenuScreen()">← メニュー</button>
+  </div>
+  <div class="bookshelf-container" id="libraryContainer">読み込み中...</div>
+</div>
+
+<!-- ===== BOOK MODAL ===== -->
+<div id="bookModal" class="modal-overlay">
+  <div class="book-modal-content">
+    <div class="book-modal-header">
+      <h2 id="viewTitle">タイトル</h2>
+      <div class="meta" id="viewMeta"></div>
+    </div>
+    <div class="book-modal-body" id="bookModalBody"></div>
+    <div class="book-modal-footer" id="bookModalFooter">
+      <button class="btn btn-back" onclick="closeBook()">✕ 閉じる</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  if (typeof google === 'undefined' || !google.script) {
+    document.body.innerHTML = '<div style="font-family:sans-serif;max-width:500px;margin:80px auto;padding:30px;background:#FFF3E0;border:3px solid #FF7043;border-radius:16px;text-align:center;"><div style="font-size:48px;">⚠️</div><h2 style="color:#BF360C;">GASのデプロイURLからアクセスしてください</h2></div>';
+    throw new Error('GAS環境外');
+  }
+
+  // ===== STATE =====
+  let currentUser   = '';
+  let currentPin    = '';
+  let editingId     = null;
+  let pendingFiles  = [];
+  let uploadedMedia = [];
+
+  // ===== 自動更新 =====
+  let _lastMod   = '0';
+  let _pollTimer = null;
+
+  function startPolling() {
+    if (_pollTimer) return;
+    _pollTimer = setInterval(function() {
+      google.script.run.withSuccessHandler(function(ts) {
+        if (_lastMod !== '0' && ts !== _lastMod) {
+          _lastMod = ts;
+          onAutoRefresh();
+        } else {
+          _lastMod = ts;
+        }
+      }).getLastModified();
+    }, 10000); // 10秒ごと
+  }
+
+  function stopPolling() {
+    if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+  }
+
+  function onAutoRefresh() {
+    const active = document.querySelector('.screen.active');
+    if (!active) return;
+    // フォーム入力中は更新しない（入力内容が消えるため）
+    if (active.id === 'formScreen') return;
+    if (active.id === 'libraryScreen')  { showLibraryScreen(true);  showToast(); }
+    if (active.id === 'myShelfScreen')  { showMyShelfScreen(true);  showToast(); }
+  }
+
+  function showToast() {
+    const el = document.getElementById('autoRefreshToast');
+    el.classList.add('show');
+    setTimeout(function() { el.classList.remove('show'); }, 2500);
+  }
+
+  // ===== ページ移動 =====
+  function goToPage(page) {
+    google.script.run.withSuccessHandler(function(url) {
+      window.top.location.href = url + '?page=' + page;
+    }).getAppUrl();
+  }
+
+  // ===== STARTUP =====
+  window.onload = function() {
+    // セットアップ確認
+    google.script.run
+      .withSuccessHandler(function(r) {
+        if (!r.ok) {
+          alert('⚠️ セットアップエラー\n\n' + r.message + '\n\n【確認事項】\nスプレッドシートを開いた状態で「拡張機能」→「Apps Script」からスクリプトを作成してください。');
+        }
+      })
+      .withFailureHandler(function(e) {
+        alert('⚠️ サーバー接続エラー\n\n' + e.message + '\n\nデプロイURLを正しく開いているか確認してください。');
+      })
+      .checkSetup();
+
+    google.script.run.withSuccessHandler(function(names) {
+      const sel = document.getElementById('nameSelect');
+      names.forEach(n => { const o = document.createElement('option'); o.value = o.text = n; sel.appendChild(o); });
+    }).getTeacherList();
+  };
+
+  // ===== SCREEN =====
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+  function showMenuScreen() { showScreen('menuScreen'); }
+
+  // ===== LOGIN =====
+  function showPinModal() {
+    if (!document.getElementById('nameSelect').value) { alert('お名前を選んでください'); return; }
+    currentPin = ''; updatePinDisplay();
+    document.getElementById('pinModal').classList.add('active');
+  }
+  function closePinModal() { document.getElementById('pinModal').classList.remove('active'); }
+  function addPin(n) { if (currentPin.length < 6) { currentPin += n; updatePinDisplay(); } }
+  function clearPin() { currentPin = ''; updatePinDisplay(); }
+  function updatePinDisplay() { document.getElementById('pinDisplay').textContent = '●'.repeat(currentPin.length) || '\u00a0'; }
+
+  function submitPin() {
+    if (!currentPin) return;
+    const name = document.getElementById('nameSelect').value;
+    google.script.run.withSuccessHandler(function(r) {
+      if (r.success) {
+        currentUser = name;
+        document.getElementById('welcomeMsg').textContent = 'ようこそ、' + currentUser + ' 先生！';
+        closePinModal();
+        showScreen('menuScreen');
+        if (r.type === 'REGISTER') alert('パスワードを登録しました！\n次回から同じ番号でログインしてください。');
+        // 自動更新開始
+        google.script.run.withSuccessHandler(function(ts) { _lastMod = ts; startPolling(); }).getLastModified();
+      } else { alert(r.message); clearPin(); }
+    }).loginWithPin(name, currentPin);
+  }
+
+  function logout() { stopPolling(); currentUser = ''; showScreen('loginScreen'); }
+
+  // ===== FORM =====
+  function showFormScreen(record) {
+    editingId = null; pendingFiles = []; uploadedMedia = []; clearForm();
+    if (record) {
+      editingId = record.id;
+      document.getElementById('formTitle').textContent = '✏️ 記録を編集';
+      document.getElementById('fTitle').value    = record.title         || '';
+      document.getElementById('fWhen').value     = record.when          || '';
+      document.getElementById('fWhere').value    = record.wherePractice || '';
+      document.getElementById('fWho').value      = record.who           || '';
+      document.getElementById('fBehaviors').value= record.behaviors     || '';
+      document.getElementById('fApproach').value = record.approach      || '';
+      document.getElementById('fResults').value  = record.results       || '';
+      uploadedMedia = record.media ? [...record.media] : [];
+      renderPreviews();
+    } else {
+      document.getElementById('formTitle').textContent = '✏️ 新しい実践を記録';
+      document.getElementById('fWhen').value = new Date().toISOString().split('T')[0];
+    }
+    showScreen('formScreen');
+  }
+  function clearForm() {
+    ['fTitle','fWhen','fWhere','fWho','fBehaviors','fApproach','fResults'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('mediaPreviews').innerHTML = '';
+  }
+  function confirmBackToMenu() { if (confirm('入力内容は保存されません。戻りますか？')) showMenuScreen(); }
+
+  // ===== MEDIA =====
+  function handleFileSelect(files) {
+    Array.from(files).forEach(file => {
+      if (file.size > 5 * 1024 * 1024) { alert(file.name + ' は5MBを超えています'); return; }
+      if (!file.type.startsWith('image/')) { alert(file.name + ' は画像ではありません'); return; }
+      const reader = new FileReader();
+      reader.onload = e => { pendingFiles.push({dataUrl: e.target.result, name: file.name, type: file.type}); renderPreviews(); };
+      reader.readAsDataURL(file);
+    });
+    document.getElementById('mediaInput').value = '';
+  }
+  function renderPreviews() {
+    const c = document.getElementById('mediaPreviews'); c.innerHTML = '';
+    uploadedMedia.forEach((m, i) => {
+      const d = document.createElement('div'); d.className = 'media-preview-item';
+      d.innerHTML = '<img src="' + m.url + '" alt="' + escHtml(m.name) + '"><button class="rm-btn" onclick="uploadedMedia.splice(' + i + ',1);renderPreviews()">×</button>';
+      c.appendChild(d);
+    });
+    pendingFiles.forEach((pf, i) => {
+      const d = document.createElement('div'); d.className = 'media-preview-item';
+      d.innerHTML = '<img src="' + pf.dataUrl + '" alt="' + escHtml(pf.name) + '"><button class="rm-btn" onclick="pendingFiles.splice(' + i + ',1);renderPreviews()">×</button><div class="upload-badge">未保存</div>';
+      c.appendChild(d);
+    });
+  }
+
+  // ===== SAVE =====
+  function saveFormRecord() {
+    const title = document.getElementById('fTitle').value.trim();
+    if (!title) { alert('タイトルを入力してください'); return; }
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true; btn.textContent = '保存中...';
+    uploadNext(0, function() {
+      const data = { title, when: document.getElementById('fWhen').value,
+        wherePractice: document.getElementById('fWhere').value,
+        who: document.getElementById('fWho').value,
+        behaviors: document.getElementById('fBehaviors').value,
+        approach: document.getElementById('fApproach').value,
+        results: document.getElementById('fResults').value, media: uploadedMedia };
+      const cb = function(r) {
+        btn.disabled = false; btn.textContent = '💾 保存する';
+        if (r.success) { alert(editingId ? '更新しました！' : '保存しました！'); showMyShelfScreen(); }
+        else alert('失敗しました: ' + (r.message||''));
+      };
+      const serverErr = function(e) {
+        btn.disabled = false; btn.textContent = '💾 保存する';
+        alert('⚠️ サーバーエラー\n\n' + e.message + '\n\n【よくある原因】\n・スクリプトがスプレッドシートにバインドされていない\n・再デプロイが必要（コード変更後）');
+      };
+      if (editingId) google.script.run.withSuccessHandler(cb).withFailureHandler(serverErr).updateRecord(currentUser, editingId, data);
+      else           google.script.run.withSuccessHandler(cb).withFailureHandler(serverErr).saveRecord(currentUser, data);
+    });
+  }
+  function uploadNext(idx, done) {
+    if (idx >= pendingFiles.length) { done(); return; }
+    const pf = pendingFiles[idx];
+    google.script.run.withSuccessHandler(function(r) {
+      if (r.success) uploadedMedia.push({url: r.url, name: r.name, type: r.type});
+      uploadNext(idx + 1, done);
+    }).saveImageToDrive(pf.name, pf.type, pf.dataUrl.split(',')[1]);
+  }
+
+  // ===== MY SHELF =====
+  function showMyShelfScreen(silent) {
+    if (!silent) showScreen('myShelfScreen');
+    document.getElementById('myShelfContainer').innerHTML = '読み込み中...';
+    google.script.run
+      .withSuccessHandler(function(recs) {
+        const c = document.getElementById('myShelfContainer'); c.innerHTML = '';
+        if (!recs || recs.length === 0) { c.innerHTML = '<div class="empty-shelf">📭 まだ記録がありません。<br>新しい実践を記録してみましょう！</div>'; return; }
+        c.appendChild(buildShelfSection(recs, true, null, null));
+      })
+      .withFailureHandler(function(e) {
+        document.getElementById('myShelfContainer').innerHTML = '<div class="empty-shelf" style="color:#e53935;">⚠️ データ読み込みエラー<br>' + e.message + '</div>';
+      })
+      .getMyRecords(currentUser);
+  }
+
+  // ===== LIBRARY =====
+  function showLibraryScreen(silent) {
+    if (!silent) showScreen('libraryScreen');
+    document.getElementById('libraryContainer').innerHTML = '読み込み中...';
+    google.script.run
+      .withSuccessHandler(function(recs) {
+        const c = document.getElementById('libraryContainer'); c.innerHTML = '';
+        if (!recs || recs.length === 0) { c.innerHTML = '<div class="empty-shelf">📭 まだ記録がありません</div>'; return; }
+        const byAuthor = {}, order = [];
+        recs.forEach(r => { if (!byAuthor[r.author]) { byAuthor[r.author] = []; order.push(r.author); } byAuthor[r.author].push(r); });
+        const colors = ['bc-1','bc-2','bc-3','bc-4','bc-5','bc-6','bc-7','bc-8'];
+        order.forEach((author, ai) => c.appendChild(buildShelfSection(byAuthor[author], false, colors[ai % colors.length], author)));
+      })
+      .withFailureHandler(function(e) {
+        document.getElementById('libraryContainer').innerHTML = '<div class="empty-shelf" style="color:#e53935;">⚠️ データ読み込みエラー<br>' + e.message + '</div>';
+      })
+      .getAllRecords();
+  }
+
+  // ===== SHELF BUILDER =====
+  function buildShelfSection(records, isOwner, colorClass, authorName) {
+    const section = document.createElement('div'); section.className = 'shelf-section';
+    if (authorName) {
+      const label = document.createElement('div'); label.className = 'shelf-label';
+      label.innerHTML = '📚 ' + escHtml(authorName) + ' 先生の棚 <span style="font-size:13px;color:#888;font-weight:normal;">（' + records.length + '冊）</span>';
+      section.appendChild(label);
+    }
+    const booksDiv = document.createElement('div'); booksDiv.className = 'shelf-books';
+    records.forEach((rec, i) => {
+      const card = document.createElement('div');
+      const cc = colorClass ? colorClass : ('bc-' + ((i % 8) + 1));
+      card.className = 'book-card ' + cc;
+      card.innerHTML = '<div class="book-title-vertical">' + escHtml(rec.title) + '</div><div class="book-date-label">' + (rec.when ? fmtDate(rec.when) : '日付なし') + '</div>';
+      card.onclick = function() { openBook(rec, isOwner); };
+      booksDiv.appendChild(card);
+    });
+    const bar = document.createElement('div'); bar.className = 'shelf-bar';
+    section.appendChild(booksDiv); section.appendChild(bar);
+    return section;
+  }
+
+  // ===== BOOK VIEWER =====
+  function openBook(rec, isOwner) {
+    document.getElementById('viewTitle').textContent = rec.title;
+    document.getElementById('viewMeta').innerHTML = '✍️ ' + escHtml(rec.author) + ' 先生' + (rec.when ? '　📅 ' + fmtDate(rec.when) : '') + '　🕐 更新: ' + fmtDateTime(rec.updatedAt);
+    let body = '';
+    if (rec.wherePractice) body += secHtml('📍 どこで', escHtml(rec.wherePractice));
+    if (rec.who)           body += secHtml('👥 誰が',   escHtml(rec.who));
+    let behHtml = rec.behaviors ? escHtml(rec.behaviors) : '';
+    if (rec.media && rec.media.length > 0) {
+      behHtml += '<div class="media-gallery">' + rec.media.map(m => '<img src="' + m.url + '" onclick="window.open(\'' + m.url + '\',\'_blank\')" title="クリックで拡大">').join('') + '</div>';
+    }
+    if (behHtml) body += secHtml('📝 具体的な言動', behHtml, true);
+    if (rec.approach) body += secHtml('💡 教師の仕掛け', escHtml(rec.approach));
+    if (rec.results)  body += secHtml('✅ 成果と課題',   escHtml(rec.results));
+    document.getElementById('bookModalBody').innerHTML = body || '<div style="text-align:center;color:#aaa;padding:20px;">内容がありません</div>';
+    const footer = document.getElementById('bookModalFooter');
+    footer.innerHTML = '';
+    addBtn(footer, 'btn-back', '✕ 閉じる', closeBook);
+    if (isOwner) {
+      addBtn(footer, 'btn-edit', '✏️ 編集', function() { closeBook(); showFormScreen(rec); });
+      addBtn(footer, 'btn-del',  '🗑️ 削除', function() { confirmDelete(rec); });
+    }
+    document.getElementById('bookModal').classList.add('active');
+    google.script.run.incrementViewCount(rec.id);
+  }
+  function secHtml(label, content) {
+    return '<div class="record-section"><div class="rec-label">' + label + '</div><div class="rec-content">' + content + '</div></div>';
+  }
+  function addBtn(parent, cls, text, fn) {
+    const b = document.createElement('button'); b.className = 'btn ' + cls; b.textContent = text; b.onclick = fn;
+    parent.appendChild(b);
+  }
+  function closeBook() { document.getElementById('bookModal').classList.remove('active'); }
+
+  // ===== DELETE =====
+  function confirmDelete(rec) {
+    if (!confirm('「' + rec.title + '」を削除しますか？\nこの操作は元に戻せません。')) return;
+    google.script.run.withSuccessHandler(function(r) {
+      if (r.success) { closeBook(); alert('削除しました'); showMyShelfScreen(); }
+      else alert('削除に失敗しました: ' + (r.message||''));
+    }).deleteRecord(currentUser, rec.id);
+  }
+
+  // ===== UTILS =====
+  function escHtml(s) {
+    if (!s) return '';
+    return s.toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\n/g,'<br>');
+  }
+  function fmtDate(s) {
+    try { const d=new Date(s); if(isNaN(d)) return s; return d.getFullYear()+'/'+(d.getMonth()+1).toString().padStart(2,'0')+'/'+d.getDate().toString().padStart(2,'0'); } catch(e){ return s; }
+  }
+  function fmtDateTime(s) {
+    try { const d=new Date(s); if(isNaN(d)) return s; return d.getFullYear()+'/'+(d.getMonth()+1).toString().padStart(2,'0')+'/'+d.getDate().toString().padStart(2,'0')+' '+d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); } catch(e){ return s; }
+  }
+</script>
+</body>
+</html>
